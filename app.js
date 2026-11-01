@@ -1,6 +1,29 @@
-
-const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('on')}),{threshold:.15});
-document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
-const bar=document.querySelector('.progress span');
-addEventListener('scroll',()=>{const h=document.documentElement;const p=h.scrollTop/(h.scrollHeight-h.clientHeight);bar.style.width=(p*100)+'%'});
-document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{const t=document.querySelector(a.getAttribute('href'));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'})}}));
+const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+const io = new IntersectionObserver(entries => entries.forEach(entry => {
+  if (entry.isIntersecting) {
+    entry.target.classList.add('on');
+    io.unobserve(entry.target);
+  }
+}), {threshold: .08});
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+const bar = document.querySelector('.progress span');
+let ticking = false;
+function updateProgress() {
+  const root = document.documentElement;
+  const range = root.scrollHeight - root.clientHeight;
+  bar.style.width = `${range > 0 ? Math.min(100, Math.max(0, root.scrollTop / range * 100)) : 0}%`;
+  ticking = false;
+}
+addEventListener('scroll', () => {
+  if (!ticking) { ticking = true; requestAnimationFrame(updateProgress); }
+}, {passive: true});
+addEventListener('resize', updateProgress);
+updateProgress();
+document.querySelectorAll('a[href^="#"]').forEach(anchor => anchor.addEventListener('click', event => {
+  const target = document.getElementById(anchor.getAttribute('href').slice(1));
+  if (target) {
+    event.preventDefault();
+    target.scrollIntoView({behavior: motionQuery.matches ? 'instant' : 'smooth'});
+    history.replaceState(null, '', anchor.getAttribute('href'));
+  }
+}));
